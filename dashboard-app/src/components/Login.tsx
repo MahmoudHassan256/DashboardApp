@@ -1,17 +1,26 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleLogin = () => {
-    if (username === 'admin' && password === 'password') {
-      localStorage.setItem('user', JSON.stringify({ username, role: 'admin' }));
-      navigate('/dashboard'); // Navigate to dashboard after login
+    if (username === "admin" && password === "admin") {
+      localStorage.setItem(
+        "logged_in",
+        JSON.stringify({ name: username, role: "admin" })
+      );
+      navigate("/dashboard"); // Navigate to dashboard after login
+    } else if (username === "mahmoud" && password === "mahmoud") {
+      localStorage.setItem(
+        "logged_in",
+        JSON.stringify({ name: username, role: "viewer" })
+      );
+      navigate("/dashboard"); // Navigate to dashboard after login
     } else {
-      alert('Invalid credentials');
+      alert("Invalid credentials");
     }
   };
 

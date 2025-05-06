@@ -2,11 +2,22 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import { getLoggedInUser } from "../hooks/useAuth";
+
+type Role = "admin" | "viewer";
 
 interface User {
   id: number;
   name: string;
   email: string;
+  role: Role;
 }
 
 const USERS_KEY = "dashboard_users";
@@ -16,6 +27,9 @@ const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState<Role>("viewer");
+  const loggedin_user = getLoggedInUser();
+  const isAdmin = loggedin_user?.role === "admin" ? true : false;
 
   // Load users from localStorage on mount
   useEffect(() => {
@@ -45,6 +59,7 @@ const Users = () => {
       id: Date.now(),
       name,
       email,
+      role,
     };
     setUsers((prev) => [...prev, newUser]);
     addLog(`Added user ${name}`);
@@ -62,19 +77,33 @@ const Users = () => {
     <DashboardLayout>
       <h1 className="text-2xl font-bold mb-4">Users</h1>
 
-      <div className="flex gap-4 mb-6">
-        <Input
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <Input
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <Button onClick={handleAddUser}>Add User</Button>
-      </div>
+      {isAdmin && (
+        <div className="flex gap-4 mb-6">
+          <Input
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <Input
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <Select
+            value={role}
+            onValueChange={(value) => setRole(value as Role)}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="viewer">Viewer</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={handleAddUser}>Add User</Button>
+        </div>
+      )}
 
       <table className="w-full border border-gray-300 bg-white shadow-sm">
         <thead>
@@ -82,7 +111,8 @@ const Users = () => {
             <th className="text-left p-2 border-b">ID</th>
             <th className="text-left p-2 border-b">Name</th>
             <th className="text-left p-2 border-b">Email</th>
-            <th className="text-left p-2 border-b">Actions</th>
+            <th className="text-left p-2 border-b">Role</th>
+            {isAdmin && <th className="text-left p-2 border-b">Actions</th>}
           </tr>
         </thead>
         <tbody>
@@ -91,15 +121,18 @@ const Users = () => {
               <td className="p-2 border-b">{user.id}</td>
               <td className="p-2 border-b">{user.name}</td>
               <td className="p-2 border-b">{user.email}</td>
-              <td className="p-2 border-b">
-                <Button
-                  className="text-black-100"
-                  variant="destructive"
-                  onClick={() => handleDeleteUser(user.id)}
-                >
-                  X
-                </Button>
-              </td>
+              <td className="p-2 border-b capitalize">{user.role}</td>
+              {isAdmin && (
+                <td className="p-2 border-b">
+                  <Button
+                    className="text-black-100"
+                    variant="destructive"
+                    onClick={() => handleDeleteUser(user.id)}
+                  >
+                    Delete
+                  </Button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
