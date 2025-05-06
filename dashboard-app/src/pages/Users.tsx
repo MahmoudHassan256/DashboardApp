@@ -10,6 +10,7 @@ interface User {
 }
 
 const USERS_KEY = "dashboard_users";
+const LOGS_KEY = "dashboard_logs";
 
 const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -29,6 +30,15 @@ const Users = () => {
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
   }, [users]);
 
+  const addLog = (message: string) => {
+    const logs = JSON.parse(localStorage.getItem(LOGS_KEY) || "[]");
+    const newLog = {
+      id: Date.now(),
+      message,
+      time: new Date().toLocaleString(),
+    };
+    localStorage.setItem(LOGS_KEY, JSON.stringify([newLog, ...logs]));
+  };
   const handleAddUser = () => {
     if (!name || !email) return;
     const newUser: User = {
@@ -37,12 +47,15 @@ const Users = () => {
       email,
     };
     setUsers((prev) => [...prev, newUser]);
+    addLog(`Added user ${name}`);
     setName("");
     setEmail("");
   };
 
   const handleDeleteUser = (id: number) => {
+    const user = users.find((u) => u.id === id);
     setUsers((prev) => prev.filter((user) => user.id !== id));
+    if (user) addLog(`Deleted user ${user.name}`);
   };
 
   return (
