@@ -10,14 +10,16 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { getLoggedInUser } from "../hooks/useAuth";
+import { supabase } from "../lib/supabase";
 
 type Role = "admin" | "viewer";
 
 interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: Role;
+  created_at: string;
 }
 
 const USERS_KEY = "dashboard_users";
@@ -33,10 +35,20 @@ const Users = () => {
 
   // Load users from localStorage on mount
   useEffect(() => {
-    const storedUsers = localStorage.getItem(USERS_KEY);
-    if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
-    }
+    const fetchUsers = async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching users:", error.message);
+      } else {
+        setUsers(data || []);
+      }
+    };
+
+    fetchUsers();
   }, []);
 
   // Sync users to localStorage when they change
@@ -53,24 +65,44 @@ const Users = () => {
     };
     localStorage.setItem(LOGS_KEY, JSON.stringify([newLog, ...logs]));
   };
-  const handleAddUser = () => {
+
+  const handleAddUser = async () => {
     if (!name || !email) return;
-    const newUser: User = {
-      id: Date.now(),
-      name,
-      email,
-      role,
-    };
-    setUsers((prev) => [...prev, newUser]);
-    addLog(`Added user ${name}`);
+
+    const { data, error } = await supabase.from("users").insert([
+      {
+        name,
+        email,
+        role,
+      },
+    ]);
+
+    if (error) {
+      console.error("Error adding user:", error.message);
+      return;
+    }
+
     setName("");
     setEmail("");
+    setRole("viewer");
+
+    // Re-fetch users from Supabase
+    const { data: updatedUsers } = await supabase
+      .from("users")
+      .select("*")
+      .order("created_at", { ascending: true });
+    setUsers(updatedUsers || []);
   };
 
-  const handleDeleteUser = (id: number) => {
-    const user = users.find((u) => u.id === id);
+  const handleDeleteUser = async (id: string) => {
+    const { error } = await supabase.from("users").delete().eq("id", id);
+
+    if (error) {
+      console.error("Error deleting user:", error.message);
+      return;
+    }
+
     setUsers((prev) => prev.filter((user) => user.id !== id));
-    if (user) addLog(`Deleted user ${user.name}`);
   };
 
   return (
