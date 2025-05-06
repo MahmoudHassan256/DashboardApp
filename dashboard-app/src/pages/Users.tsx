@@ -50,6 +50,15 @@ const Users = () => {
     fetchUsers();
   }, []);
 
+  const addLog = async (message: string) => {
+    await supabase.from("logs").insert([
+      {
+        message,
+        time: new Date().toISOString(),
+      },
+    ]);
+  };
+
   const handleAddUser = async () => {
     if (!name || !email) return;
 
@@ -66,11 +75,12 @@ const Users = () => {
       return;
     }
 
+    await addLog(`Added user ${name}`);
+
     setName("");
     setEmail("");
     setRole("viewer");
 
-    // Refresh user list
     const { data: updatedUsers } = await supabase
       .from("users")
       .select("*")
@@ -80,11 +90,17 @@ const Users = () => {
   };
 
   const handleDeleteUser = async (id: string) => {
+    const user = users.find((u) => u.id === id);
+
     const { error } = await supabase.from("users").delete().eq("id", id);
 
     if (error) {
       console.error("Error deleting user:", error.message);
       return;
+    }
+
+    if (user) {
+      await addLog(`Deleted user ${user.name}`);
     }
 
     setUsers((prev) => prev.filter((user) => user.id !== id));
