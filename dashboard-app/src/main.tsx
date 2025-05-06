@@ -6,6 +6,7 @@ import "./index.css";
 import App from "./App.tsx";
 import Dashboard from "./components/Dashboard.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
+import Users from "./pages/Users.tsx";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -20,6 +21,14 @@ root.render(
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/users"
+        element={
+          <ProtectedRoute>
+            <Users />
           </ProtectedRoute>
         }
       />
