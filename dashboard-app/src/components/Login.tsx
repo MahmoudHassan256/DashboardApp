@@ -1,13 +1,15 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
     if (username === 'admin' && password === 'password') {
       localStorage.setItem('user', JSON.stringify({ username, role: 'admin' }));
-      alert('Login successful');
+      navigate('/dashboard'); // Navigate to dashboard after login
     } else {
       alert('Invalid credentials');
     }
