@@ -11,11 +11,13 @@ interface Log {
 
 const Logs = () => {
   const [logs, setLogs] = useState<Log[]>([]);
+  const [loading, setLoading] = useState(true);
   const loggedin_user = getLoggedInUser();
   const isAdmin = loggedin_user?.role === "admin";
 
   useEffect(() => {
     const fetchLogs = async () => {
+      setLoading(true);
       const { data, error } = await supabase
         .from("logs")
         .select("*")
@@ -26,6 +28,7 @@ const Logs = () => {
       } else {
         setLogs(data || []);
       }
+      setLoading(false);
     };
 
     fetchLogs();
@@ -36,17 +39,22 @@ const Logs = () => {
       {isAdmin ? (
         <div>
           <h1 className="text-2xl font-bold mb-4">System Logs</h1>
-          <ul className="bg-white border rounded shadow-sm">
-            {logs.map((log) => (
-              <li key={log.id} className="p-4 border-b last:border-b-0">
-                <p className="font-medium">{log.message}</p>
-                <span className="text-sm text-gray-500">{log.time}</span>
-              </li>
-            ))}
-            {logs.length === 0 && (
-              <li className="p-4 text-gray-500">No logs available.</li>
-            )}
-          </ul>
+          {loading ? (
+            <p className="text-gray-500">Loading logs...</p>
+          ) : logs.length === 0 ? (
+            <p className="text-gray-500">No logs available.</p>
+          ) : (
+            <ul className="bg-white border rounded shadow-sm">
+              {logs.map((log) => (
+                <li key={log.id} className="p-4 border-b last:border-b-0">
+                  <p className="font-medium">{log.message}</p>
+                  <span className="text-sm text-gray-500">
+                    {new Date(log.time).toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       ) : (
         <div>Only admins can view logs.</div>
