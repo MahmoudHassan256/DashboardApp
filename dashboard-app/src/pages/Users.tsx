@@ -22,18 +22,15 @@ interface User {
   created_at: string;
 }
 
-const USERS_KEY = "dashboard_users";
-const LOGS_KEY = "dashboard_logs";
-
 const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("viewer");
+  const [loading, setLoading] = useState(true);
   const loggedin_user = getLoggedInUser();
-  const isAdmin = loggedin_user?.role === "admin" ? true : false;
+  const isAdmin = loggedin_user?.role === "admin";
 
-  // Load users from localStorage on mount
   useEffect(() => {
     const fetchUsers = async () => {
       const { data, error } = await supabase
@@ -46,30 +43,17 @@ const Users = () => {
       } else {
         setUsers(data || []);
       }
+
+      setLoading(false);
     };
 
     fetchUsers();
   }, []);
 
-  // Sync users to localStorage when they change
-  useEffect(() => {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  }, [users]);
-
-  const addLog = (message: string) => {
-    const logs = JSON.parse(localStorage.getItem(LOGS_KEY) || "[]");
-    const newLog = {
-      id: Date.now(),
-      message,
-      time: new Date().toLocaleString(),
-    };
-    localStorage.setItem(LOGS_KEY, JSON.stringify([newLog, ...logs]));
-  };
-
   const handleAddUser = async () => {
     if (!name || !email) return;
 
-    const { data, error } = await supabase.from("users").insert([
+    const { error } = await supabase.from("users").insert([
       {
         name,
         email,
@@ -86,11 +70,12 @@ const Users = () => {
     setEmail("");
     setRole("viewer");
 
-    // Re-fetch users from Supabase
+    // Refresh user list
     const { data: updatedUsers } = await supabase
       .from("users")
       .select("*")
       .order("created_at", { ascending: true });
+
     setUsers(updatedUsers || []);
   };
 
@@ -121,10 +106,7 @@ const Users = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <Select
-            value={role}
-            onValueChange={(value) => setRole(value as Role)}
-          >
+          <Select value={role} onValueChange={(value) => setRole(value as Role)}>
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Role" />
             </SelectTrigger>
@@ -137,38 +119,43 @@ const Users = () => {
         </div>
       )}
 
-      <table className="w-full border border-gray-300 bg-white shadow-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="text-left p-2 border-b">ID</th>
-            <th className="text-left p-2 border-b">Name</th>
-            <th className="text-left p-2 border-b">Email</th>
-            <th className="text-left p-2 border-b">Role</th>
-            {isAdmin && <th className="text-left p-2 border-b">Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.id}>
-              <td className="p-2 border-b">{user.id}</td>
-              <td className="p-2 border-b">{user.name}</td>
-              <td className="p-2 border-b">{user.email}</td>
-              <td className="p-2 border-b capitalize">{user.role}</td>
-              {isAdmin && (
-                <td className="p-2 border-b">
-                  <Button
-                    className="text-black-100"
-                    variant="destructive"
-                    onClick={() => handleDeleteUser(user.id)}
-                  >
-                    Delete
-                  </Button>
-                </td>
-              )}
+      {loading ? (
+        <p>Loading...</p>
+      ) : users.length === 0 ? (
+        <p>No users found.</p>
+      ) : (
+        <table className="w-full border border-gray-300 bg-white shadow-sm">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="text-left p-2 border-b">ID</th>
+              <th className="text-left p-2 border-b">Name</th>
+              <th className="text-left p-2 border-b">Email</th>
+              <th className="text-left p-2 border-b">Role</th>
+              {isAdmin && <th className="text-left p-2 border-b">Actions</th>}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr key={user.id}>
+                <td className="p-2 border-b">{user.id}</td>
+                <td className="p-2 border-b">{user.name}</td>
+                <td className="p-2 border-b">{user.email}</td>
+                <td className="p-2 border-b capitalize">{user.role}</td>
+                {isAdmin && (
+                  <td className="p-2 border-b">
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleDeleteUser(user.id)}
+                    >
+                      Delete
+                    </Button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </DashboardLayout>
   );
 };
